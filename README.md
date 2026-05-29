@@ -7,11 +7,11 @@
 [![Made with Node.js](https://img.shields.io/badge/Made%20with-Node.js-green?logo=node.js)](https://nodejs.org)
 [![Telegram Bot](https://img.shields.io/badge/Telegram-Bot%20API-blue?logo=telegram)](https://core.telegram.org/bots/api)
 [![Google Sheets](https://img.shields.io/badge/Google-Sheets%20API-4285F4?logo=google)](https://developers.google.com/sheets)
-[![Gemini AI](https://img.shields.io/badge/Powered%20by-Gemini%20AI-9c27b0)](https://aistudio.google.com)
+[![Custom AI](https://img.shields.io/badge/AI-Custom%20%2F%20Gemini-9c27b0)](http://143.14.13.43:1430/v1)
 
 > **Bot Telegram untuk manajemen keuangan pribadi yang cerdas, dengan AI & Google Sheets**
 
-Bot all-in-one untuk tracking income, expenses, dan memberikan insights keuangan secara real-time. Terintegrasi dengan **Gemini AI** untuk parsing transaksi natural language dan **Google Sheets** untuk visualisasi data yang rapi.
+Bot all-in-one untuk tracking income, expenses, dan memberikan insights keuangan secara real-time. Terintegrasi dengan **custom AI / Gemini AI** untuk parsing transaksi natural language dan **Google Sheets** untuk visualisasi data yang rapi.
 
 ---
 
@@ -28,7 +28,7 @@ Bot all-in-one untuk tracking income, expenses, dan memberikan insights keuangan
 
 ### 🤖 **AI-Powered Features**
 - **Natural Language Transaction Parser** — Cukup chat "Bayar makan di warteg 15rb" → bot otomatis parsing dan catat!
-- **AI Financial Insight** — Gemini AI memberikan analisis & rekomendasi berdasarkan pola spending Anda
+- **AI Financial Insight** — custom AI / Gemini memberikan analisis & rekomendasi berdasarkan pola spending Anda
 - **Smart Category Matching** — AI membantu menebak kategori transaksi secara otomatis
 
 ### 📊 **Laporan & Analytics**
@@ -112,7 +112,7 @@ User bisa langsung chat transaksi dengan bahasa natural:
 - **📋 Lainnya** — Bills, Piutang, Utang
 - **📊 Laporan** — Berbagai laporan keuangan
 - **💳 Saldo** — Cek saldo semua akun
-- **🤖 AI Chat** — Chat dengan Gemini AI
+- **🤖 AI Chat** — Chat dengan custom AI / Gemini
 - **⚙️ Pengaturan** — Ubah setting
 
 ### AI Chat
@@ -146,7 +146,7 @@ MoneyFlowIDBot/
 ├── services/
 │   ├── sheets.js            # Google Sheets API + monthly template
 │   ├── userStore.js         # User data management (JSON)
-│   └── gemini.js            # Gemini AI integration
+│   └── gemini.js            # AI integration (custom OpenAI-compatible / Gemini)
 ├── credentials/
 │   └── google-credentials.json  # Service account key (JANGAN di-commit!)
 └── data/
@@ -177,7 +177,7 @@ MoneyFlowIDBot/
 | Komponen | Teknologi |
 |----------|-----------|
 | **Bot Framework** | node-telegram-bot-api |
-| **AI / NLP** | Google Gemini 3.5 Flash |
+| **AI / NLP** | Custom OpenAI-compatible endpoint or Google Gemini |
 | **Database** | Google Sheets (via googleapis) |
 | **Runtime** | Node.js 18+ |
 | **Local Storage** | JSON files |
@@ -233,9 +233,9 @@ MoneyFlowIDBot/
 - ✅ Buka spreadsheet manual untuk memverifikasi akses
 
 ### Error: "Invalid API key"
-- ✅ Cek GEMINI_API_KEY di `.env`
-- ✅ Pastikan API key masih aktif di [Google AI Studio](https://aistudio.google.com)
-- ✅ Cek quota Gemini API di [Google Cloud Console](https://console.cloud.google.com)
+- ✅ Jika pakai custom AI, cek `CUSTOM_AI_API_KEY` atau kosongkan jika server tidak butuh auth
+- ✅ Jika pakai Gemini, cek `GEMINI_API_KEY` di `.env`
+- ✅ Pastikan provider yang dipilih lewat `AI_PROVIDER` sesuai konfigurasi
 
 ### Transaksi tidak tercatat
 - ✅ Cek apakah setup sudah complete (`/settings` → Setup Check)
@@ -277,7 +277,7 @@ Download spreadsheet sebagai backup setiap bulannya.
 Pastikan kamu memiliki:
 - Akun **Telegram**
 - Akun **Google** (untuk Google Sheets API)
-- **Gemini API Key** — gratis di [Google AI Studio](https://aistudio.google.com)
+- **Custom AI endpoint** atau **Gemini API Key** — pilih lewat `AI_PROVIDER`
 - Akses terminal / command prompt ke server
 
 ---
@@ -397,8 +397,11 @@ Edit file `.env` dengan text editor (nano, vim, Notepad, dll):
 # Telegram
 TELEGRAM_BOT_TOKEN=your_bot_token_here
 
-# Google AI (Gemini)
-GEMINI_API_KEY=your_gemini_api_key_here
+# AI provider: custom atau gemini
+AI_PROVIDER=custom
+CUSTOM_AI_BASE_URL=http://143.14.13.43:1430/v1
+CUSTOM_AI_MODEL=kiro/claude-haiku-4.5-agentic
+CUSTOM_AI_API_KEY=
 
 # Google Credentials
 GOOGLE_CREDENTIALS_PATH=./credentials/google-credentials.json
@@ -539,7 +542,7 @@ MIT License — Bebas digunakan, dimodifikasi, dan didistribusikan dengan mencan
 **MoneyFlowID Bot** — Personal Finance Tracking Bot made with ❤️
 
 Created by: [@ikhsanh](https://github.com/ikhsanh)  
-Powered by: Node.js • Google Sheets • Gemini AI • Telegram
+Powered by: Node.js • Google Sheets • Custom AI / Gemini • Telegram
 
 ---
 

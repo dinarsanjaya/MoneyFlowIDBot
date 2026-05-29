@@ -1,7 +1,7 @@
 {
   "name": "moneyflowid-bot",
   "version": "1.0.0",
-  "description": "Telegram Financial Tracker Bot dengan Gemini AI & Google Sheets",
+  "description": "Telegram Financial Tracker Bot dengan Custom AI/Gemini & Google Sheets",
   "main": "index.js",
   "scripts": {
     "start": "node index.js",

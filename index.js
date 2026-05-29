@@ -15,6 +15,7 @@ const cron = require('node-cron');
 // Services
 const userStore = require('./services/userStore');
 const sheets = require('./services/sheets');
+const aiService = require('./services/gemini');
 
 // Middleware
 const session = require('./middleware/session');
@@ -1200,9 +1201,11 @@ function checkSetup(bot, msg) {
 // =============================================
 
 bot.getMe().then((me) => {
+  const aiInfo = aiService.getProviderInfo();
   console.log(`✅ Bot @${me.username} berjalan!`);
   console.log(`📊 Google Credentials: ${process.env.GOOGLE_CREDENTIALS_PATH}`);
-  console.log(`🤖 Gemini AI: ${process.env.GEMINI_API_KEY ? 'Configured' : '⚠️ NOT SET'}`);
+  console.log(`🤖 AI Provider: ${aiInfo.provider} (${aiInfo.model})${aiInfo.configured ? '' : ' ⚠️ NOT SET'}`);
+  if (aiInfo.provider === 'custom') console.log(`🔌 AI Base URL: ${aiInfo.baseUrl}`);
   console.log(`⏰ Timezone: ${process.env.TIMEZONE || 'Asia/Jakarta'}`);
   console.log('─'.repeat(50));
   console.log('MoneyFlowID Bot siap menerima pesan!');

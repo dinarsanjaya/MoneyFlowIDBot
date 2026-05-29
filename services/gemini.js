@@ -1,12 +1,109 @@
 /**
- * Gemini AI Service
+ * AI Service
  * MoneyFlowID Bot
+ *
+ * Supports Gemini and OpenAI-compatible custom endpoints.
  */
 
 require('dotenv').config();
 const { GoogleGenerativeAI } = require('@google/generative-ai');
 
 let genAI = null;
+
+const DEFAULT_CUSTOM_AI_BASE_URL = 'http://143.14.13.43:1430/v1';
+const DEFAULT_CUSTOM_AI_MODEL = 'kiro/claude-haiku-4.5-agentic';
+
+function getAiProvider() {
+  const provider = (process.env.AI_PROVIDER || '').trim().toLowerCase();
+  if (provider) return provider;
+  if (process.env.CUSTOM_AI_BASE_URL || process.env.OPENAI_BASE_URL) return 'custom';
+  return 'gemini';
+}
+
+function getCustomConfig() {
+  return {
+    baseUrl: (process.env.CUSTOM_AI_BASE_URL || process.env.OPENAI_BASE_URL || DEFAULT_CUSTOM_AI_BASE_URL).replace(/\/+$/, ''),
+    model: process.env.CUSTOM_AI_MODEL || process.env.OPENAI_MODEL || DEFAULT_CUSTOM_AI_MODEL,
+    apiKey: process.env.CUSTOM_AI_API_KEY || process.env.OPENAI_API_KEY || '',
+  };
+}
+
+function isCustomProvider() {
+  return ['custom', 'openai', 'kiro', 'claude'].includes(getAiProvider());
+}
+
+function getProviderInfo() {
+  if (isCustomProvider()) {
+    const { baseUrl, model, apiKey } = getCustomConfig();
+    return { provider: 'custom', baseUrl, model, configured: true, hasApiKey: Boolean(apiKey) };
+  }
+  return {
+    provider: 'gemini',
+    model: process.env.GEMINI_MODEL || 'gemini-3.5-flash',
+    configured: Boolean(process.env.GEMINI_API_KEY),
+  };
+}
+
+function toTextContent(message) {
+  if (!message) return '';
+  if (message.content !== undefined) return stringifyContent(message.content);
+  if (Array.isArray(message.parts)) return message.parts.map((p) => p.text || '').join('\n');
+  return '';
+}
+
+function stringifyContent(content) {
+  if (content === null || content === undefined) return '';
+  if (typeof content === 'string') return content;
+  if (Array.isArray(content)) {
+    return content.map((part) => (
+      typeof part === 'string' ? part : part.text || part.content || ''
+    )).join('\n');
+  }
+  if (typeof content === 'object') return content.text || content.content || JSON.stringify(content);
+  return String(content);
+}
+
+function mapHistoryForCustom(history = []) {
+  return history
+    .map((item) => ({
+      role: item.role === 'model' ? 'assistant' : item.role,
+      content: toTextContent(item),
+    }))
+    .filter((item) => item.content);
+}
+
+async function callCustomChat(messages, options = {}) {
+  const { baseUrl, model, apiKey } = getCustomConfig();
+  const headers = { 'Content-Type': 'application/json' };
+  if (apiKey) headers.Authorization = `Bearer ${apiKey}`;
+
+  const res = await fetch(`${baseUrl}/chat/completions`, {
+    method: 'POST',
+    headers,
+    body: JSON.stringify({
+      model,
+      messages,
+      temperature: options.temperature ?? 0.7,
+      max_tokens: options.maxOutputTokens ?? 500,
+    }),
+  });
+
+  const bodyText = await res.text();
+  if (!res.ok) {
+    throw new Error(`Custom AI ${res.status}: ${bodyText.slice(0, 500)}`);
+  }
+
+  let body;
+  try {
+    body = JSON.parse(bodyText);
+  } catch {
+    return bodyText.trim();
+  }
+
+  const content = body.choices?.[0]?.message?.content || body.choices?.[0]?.text || body.output_text;
+  if (!content) throw new Error('Custom AI returned an empty response.');
+  return stringifyContent(content).trim();
+}
 
 function getClient() {
   if (!genAI) {
@@ -40,6 +137,17 @@ async function executeWithFallback(actionFn) {
     }
   }
   throw lastError || new Error('All fallback Gemini models failed.');
+}
+
+async function generateText(prompt, options = {}) {
+  if (isCustomProvider()) {
+    return callCustomChat([{ role: 'user', content: prompt }], options);
+  }
+
+  const result = await executeWithFallback(async (model) => {
+    return await model.generateContent(prompt);
+  });
+  return result.response.text().trim();
 }
 
 // =============================================
@@ -96,10 +204,7 @@ Important:
 - Return ONLY valid JSON, no markdown, no explanation.`;
 
   try {
-    const result = await executeWithFallback(async (model) => {
-      return await model.generateContent(prompt);
-    });
-    const text = result.response.text().trim();
+    const text = await generateText(prompt, { maxOutputTokens: 500, temperature: 0.2 });
 
     // Extract JSON from response
     const jsonMatch = text.match(/\{[\s\S]*\}/);
@@ -118,7 +223,7 @@ Important:
           : '⚠️ AI is currently overloaded, please try again in a few minutes!'
       };
     }
-    console.error('Gemini parseTransaction error:', msg.split('\n')[0]);
+    console.error('AI parseTransaction error:', msg.split('\n')[0]);
     return null;
   }
 }
@@ -184,10 +289,7 @@ Format: Use emoji sparingly for readability
 Keep it concise (max 250 words)`;
 
   try {
-    const result = await executeWithFallback(async (model) => {
-      return await model.generateContent(prompt);
-    });
-    return result.response.text().trim();
+    return await generateText(prompt, { maxOutputTokens: 500, temperature: 0.7 });
   } catch (err) {
     const msg = err.message || '';
     if (msg.includes('429') || msg.includes('quota') || msg.includes('Too Many Requests')) {
@@ -195,7 +297,7 @@ Keep it concise (max 250 words)`;
         ? '⚠️ AI sedang overload saat ini. Coba lagi dalam beberapa menit ya!'
         : '⚠️ AI is currently overloaded. Please try again in a few minutes!';
     }
-    console.error('Gemini generateInsight error:', msg.split('\n')[0]);
+    console.error('AI generateInsight error:', msg.split('\n')[0]);
     return lang === 'id'
       ? '❌ Tidak dapat menghasilkan insight saat ini. Coba lagi nanti.'
       : '❌ Could not generate insight right now. Please try again later.';
@@ -207,7 +309,7 @@ Keep it concise (max 250 words)`;
 // =============================================
 
 /**
- * Chat umum dengan Gemini, dengan konteks keuangan user
+ * Chat umum dengan AI, dengan konteks keuangan user
  * @param {string} message - Pesan user
  * @param {Array} history - Chat history [{role, parts: [{text}]}]
  * @param {Object} userCtx - Konteks user
@@ -235,6 +337,15 @@ Guidelines:
 - Format numbers in Indonesian style (e.g., Rp 1.500.000)`;
 
   try {
+    if (isCustomProvider()) {
+      const messages = [
+        { role: 'system', content: systemContext },
+        ...mapHistoryForCustom(history),
+        { role: 'user', content: message },
+      ];
+      return await callCustomChat(messages, { maxOutputTokens: 500, temperature: 0.7 });
+    }
+
     const result = await executeWithFallback(async (model) => {
       const chatObj = model.startChat({
         history: history.length > 0
@@ -256,7 +367,7 @@ Guidelines:
     });
     return result.response.text().trim();
   } catch (err) {
-    console.error('Gemini chat error:', err.message);
+    console.error('AI chat error:', err.message);
     return lang === 'id'
       ? '❌ AI sedang tidak tersedia. Coba lagi dalam beberapa saat.'
       : '❌ AI is currently unavailable. Please try again in a moment.';
@@ -270,10 +381,7 @@ async function getBillReminder(billName, amount, dueDay, lang = 'id') {
   const prompt = `In ${lang === 'id' ? 'Bahasa Indonesia' : 'English'}, write a very short (1 sentence), friendly reminder about paying the bill "${billName}" of Rp ${Math.round(amount).toLocaleString('id-ID')} due on the ${dueDay}th. Add one relevant emoji at the start.`;
 
   try {
-    const result = await executeWithFallback(async (model) => {
-      return await model.generateContent(prompt);
-    });
-    return result.response.text().trim();
+    return await generateText(prompt, { maxOutputTokens: 120, temperature: 0.7 });
   } catch {
     return lang === 'id'
       ? `📅 Jangan lupa bayar tagihan ${billName} sebesar Rp ${Math.round(amount).toLocaleString('id-ID')}!`
@@ -282,6 +390,7 @@ async function getBillReminder(billName, amount, dueDay, lang = 'id') {
 }
 
 module.exports = {
+  getProviderInfo,
   parseTransaction,
   generateInsight,
   chat,
