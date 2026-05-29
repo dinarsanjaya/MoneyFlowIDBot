@@ -18,6 +18,9 @@ Bot pencatatan keuangan pribadi yang cerdas, terintegrasi dengan:
 • 💳 Multi-akun & multi-kategori
 
 Mari kita mulai setup akun kamu! 🚀
+
+👨‍💻 *Author:* @ikhsanh
+🐙 *GitHub:* github.com/ikhsanh
 `,
 
   selectLanguage: `

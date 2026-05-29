@@ -18,6 +18,9 @@ Your smart personal finance tracker, integrated with:
 • 💳 Multi-account & multi-category
 
 Let's set up your account! 🚀
+
+👨‍💻 *Author:* @ikhsanh
+🐙 *GitHub:* github.com/ikhsanh
 `,
 
   selectLanguage: `
