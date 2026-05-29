@@ -79,6 +79,38 @@ function mapHistoryForCustom(history = []) {
     .filter((item) => item.content);
 }
 
+function getContentFromCustomBody(body) {
+  return body.choices?.[0]?.message?.content
+    || body.choices?.[0]?.delta?.content
+    || body.choices?.[0]?.text
+    || body.output_text;
+}
+
+function parseCustomResponseText(bodyText) {
+  try {
+    const body = JSON.parse(bodyText);
+    const content = getContentFromCustomBody(body);
+    return content ? stringifyContent(content) : '';
+  } catch {}
+
+  const chunks = [];
+  for (const line of bodyText.split(/\r?\n/)) {
+    const trimmed = line.trim();
+    if (!trimmed.startsWith('data:')) continue;
+
+    const data = trimmed.slice(5).trim();
+    if (!data || data === '[DONE]') continue;
+
+    try {
+      const body = JSON.parse(data);
+      const content = getContentFromCustomBody(body);
+      if (content) chunks.push(stringifyContent(content));
+    } catch {}
+  }
+
+  return chunks.join('');
+}
+
 async function callCustomChat(messages, options = {}) {
   const { baseUrl, model, apiKey } = getCustomConfig();
   const headers = { 'Content-Type': 'application/json' };
@@ -92,6 +124,7 @@ async function callCustomChat(messages, options = {}) {
       messages,
       temperature: options.temperature ?? 0.7,
       max_tokens: options.maxOutputTokens ?? 500,
+      stream: false,
     }),
   });
 
@@ -100,16 +133,9 @@ async function callCustomChat(messages, options = {}) {
     throw new Error(`Custom AI ${res.status}: ${bodyText.slice(0, 500)}`);
   }
 
-  let body;
-  try {
-    body = JSON.parse(bodyText);
-  } catch {
-    return truncateAiText(bodyText);
-  }
-
-  const content = body.choices?.[0]?.message?.content || body.choices?.[0]?.text || body.output_text;
+  const content = parseCustomResponseText(bodyText);
   if (!content) throw new Error('Custom AI returned an empty response.');
-  return truncateAiText(stringifyContent(content));
+  return truncateAiText(content);
 }
 
 function getClient() {
