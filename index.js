@@ -2,8 +2,10 @@
  * MoneyFlowID Bot — Entry Point
  * Bot Telegram Pencatatan Keuangan dengan Gemini AI & Google Sheets
  *
- * @author MoneyFlowID
- * @version 1.0.0
+ * @author   Ikhsanh
+ * @telegram @ikhsanh
+ * @github   https://github.com/ikhsanh
+ * @version  1.0.0
  */
 
 require('dotenv').config();
@@ -1204,6 +1206,11 @@ bot.getMe().then((me) => {
   console.log(`⏰ Timezone: ${process.env.TIMEZONE || 'Asia/Jakarta'}`);
   console.log('─'.repeat(50));
   console.log('MoneyFlowID Bot siap menerima pesan!');
+  console.log('─'.repeat(50));
+  console.log('👨‍💻 Dibuat oleh  : Ikhsanh');
+  console.log('📱 Telegram      : @ikhsanh');
+  console.log('🐙 GitHub        : https://github.com/ikhsanh');
+  console.log('─'.repeat(50));
 }).catch((err) => {
   console.error('❌ Gagal terhubung ke Telegram:', err.message);
   process.exit(1);

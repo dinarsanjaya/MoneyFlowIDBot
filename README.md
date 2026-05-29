@@ -105,28 +105,85 @@ User bisa langsung chat transaksi dengan bahasa natural:
 
 ---
 
-## 🚀 Cara Setup
+## 🚀 Cara Setup & Instalasi
+
+> Panduan ini berlaku untuk **VPS (Linux)**, **Windows Server**, maupun **Home Mini Server** (Raspberry Pi, mini PC, dll).
+
+---
 
 ### 1. Prasyarat
-- [Node.js](https://nodejs.org) v18+ terinstall
-- Akun Google (untuk Google Sheets API)
-- Akun Telegram
-- Gemini API Key (gratis di [Google AI Studio](https://aistudio.google.com))
 
-### 2. Clone & Install
+Pastikan kamu memiliki:
+- Akun **Telegram**
+- Akun **Google** (untuk Google Sheets API)
+- **Gemini API Key** — gratis di [Google AI Studio](https://aistudio.google.com)
+- Akses terminal / command prompt ke server
+
+---
+
+### 2. Install Node.js
+
+#### 🐧 Linux (Ubuntu/Debian — VPS atau Home Server)
+```bash
+# Install Node.js v18 via NodeSource
+curl -fsSL https://deb.nodesource.com/setup_18.x | sudo -E bash -
+sudo apt-get install -y nodejs
+
+# Verifikasi instalasi
+node -v   # harus v18.x.x ke atas
+npm -v
+```
+
+#### 🪟 Windows (Server / Home Mini PC)
+1. Download installer dari [nodejs.org](https://nodejs.org) — pilih versi **LTS (v18+)**
+2. Jalankan installer, ikuti wizard sampai selesai
+3. Buka **Command Prompt** atau **PowerShell**, verifikasi:
+   ```powershell
+   node -v
+   npm -v
+   ```
+
+---
+
+### 3. Install Git & Clone Repository
+
+#### 🐧 Linux
+```bash
+# Install Git (jika belum ada)
+sudo apt-get install -y git
+
+# Clone repository ke folder tujuan
+git clone https://github.com/ikhsanh/MoneyFlowIDBot.git
+cd MoneyFlowIDBot
+```
+
+#### 🪟 Windows
+1. Download & install **Git** dari [git-scm.com](https://git-scm.com)
+2. Buka **Command Prompt** atau **PowerShell**:
+   ```powershell
+   git clone https://github.com/ikhsanh/MoneyFlowIDBot.git
+   cd MoneyFlowIDBot
+   ```
+
+---
+
+### 4. Install Dependencies
 
 ```bash
-cd C:\Users\Ikhsanh\Downloads\bot\MoneyFlowIDBot
 npm install
 ```
 
-### 3. Buat Telegram Bot
+---
+
+### 5. Buat Telegram Bot
 
 1. Chat ke [@BotFather](https://t.me/BotFather) di Telegram
 2. Kirim `/newbot`
 3. Ikuti instruksi, catat **Bot Token**
 
-### 4. Buat Google Service Account
+---
+
+### 6. Buat Google Service Account
 
 1. Buka [Google Cloud Console](https://console.cloud.google.com)
 2. Buat project baru (atau pilih yang sudah ada)
@@ -139,10 +196,19 @@ npm install
    - Klik service account yang baru dibuat
    - Tab "Keys" → Add Key → JSON
    - File JSON akan terdownload
-6. **Salin file JSON** ke: `credentials/google-credentials.json`
+6. **Salin file JSON** ke folder project:
+   ```bash
+   # Linux
+   cp ~/Downloads/your-key.json credentials/google-credentials.json
+
+   # Windows (PowerShell)
+   copy C:\Users\YourName\Downloads\your-key.json credentials\google-credentials.json
+   ```
 7. **Catat email** service account (contoh: `bot@project.iam.gserviceaccount.com`)
 
-### 5. Setup Google Spreadsheet
+---
+
+### 7. Setup Google Spreadsheet
 
 1. Buat spreadsheet baru di [Google Sheets](https://sheets.google.com)
 2. **Share spreadsheet** ke email service account dengan akses **Editor**:
@@ -152,13 +218,19 @@ npm install
    https://docs.google.com/spreadsheets/d/[INI_SPREADSHEET_ID]/edit
    ```
 
-### 6. Konfigurasi .env
+---
+
+### 8. Konfigurasi .env
 
 ```bash
+# Linux
+cp .env.example .env
+
+# Windows
 copy .env.example .env
 ```
 
-Edit file `.env`:
+Edit file `.env` dengan text editor (nano, vim, Notepad, dll):
 
 ```env
 # Telegram
@@ -174,7 +246,9 @@ GOOGLE_CREDENTIALS_PATH=./credentials/google-credentials.json
 TIMEZONE=Asia/Jakarta
 ```
 
-### 7. Jalankan Bot
+---
+
+### 9. Jalankan Bot (Test Awal)
 
 ```bash
 node index.js
@@ -186,7 +260,11 @@ Output yang diharapkan:
 ✅ Bot @YourBotName berjalan!
 ```
 
-### 8. Setup via Telegram
+Jika sudah berjalan, tekan `Ctrl+C` untuk berhenti, lalu lanjut ke langkah deploy permanen di bawah.
+
+---
+
+### 10. Setup via Telegram
 
 1. Buka Telegram, cari bot kamu
 2. Kirim `/start`
@@ -194,6 +272,91 @@ Output yang diharapkan:
 4. Masukkan Spreadsheet ID
 5. Setup sumber income, akun, kategori, tagihan
 6. Selesai! Sheet bulan ini otomatis terbuat 🎉
+
+---
+
+## 🖥️ Menjalankan Secara Permanen di Server
+
+Pilih salah satu metode sesuai OS server kamu:
+
+### 🔵 Menggunakan PM2 (Rekomendasi — Linux & Windows)
+
+PM2 adalah process manager terbaik untuk Node.js. Bot akan **otomatis restart** jika crash dan saat server reboot.
+
+```bash
+# Install PM2 secara global
+npm install -g pm2
+
+# Jalankan bot dengan PM2
+pm2 start index.js --name "moneyflow-bot"
+
+# Simpan daftar proses agar auto-start saat reboot
+pm2 save
+pm2 startup
+```
+
+Perintah PM2 berguna lainnya:
+```bash
+pm2 status                    # Cek status bot
+pm2 logs moneyflow-bot        # Lihat log bot
+pm2 restart moneyflow-bot     # Restart bot
+pm2 stop moneyflow-bot        # Stop bot
+```
+
+---
+
+### 🐧 Linux — Systemd Service (Alternatif PM2)
+
+Buat file service systemd:
+```bash
+sudo nano /etc/systemd/system/moneyflowid-bot.service
+```
+
+Isi dengan:
+```ini
+[Unit]
+Description=MoneyFlowID Telegram Bot
+After=network.target
+
+[Service]
+Type=simple
+User=your-username
+WorkingDirectory=/home/your-username/MoneyFlowIDBot
+ExecStart=/usr/bin/node index.js
+Restart=always
+RestartSec=10
+EnvironmentFile=/home/your-username/MoneyFlowIDBot/.env
+
+[Install]
+WantedBy=multi-user.target
+```
+
+> Ganti `your-username` dengan username Linux kamu (cek dengan `whoami`)
+
+Aktifkan service:
+```bash
+sudo systemctl daemon-reload
+sudo systemctl enable moneyflowid-bot
+sudo systemctl start moneyflowid-bot
+
+# Cek status
+sudo systemctl status moneyflowid-bot
+```
+
+---
+
+### 🪟 Windows — Task Scheduler
+
+1. Buka **Task Scheduler** (cari di Start Menu)
+2. Klik **Create Basic Task** → Nama: `MoneyFlowID Bot`
+3. **Trigger**: `When the computer starts`
+4. **Action**: `Start a program`
+   - Program/script: `node`
+   - Add arguments: `index.js`
+   - Start in: `C:\path\to\MoneyFlowIDBot` *(isi sesuai folder project kamu)*
+5. Klik Finish
+
+> 💡 **Tips**: Gunakan PM2 di Windows juga bisa — lebih mudah dari Task Scheduler dan support auto-restart.
 
 ## 📱 Cara Penggunaan
 
@@ -261,57 +424,6 @@ MoneyFlowIDBot/
 | **Financial Goals** | Target keuangan | Akun → | Alokasi untuk investasi |
 
 ---
-
-## 🏠 Menjalankan di Home Server (Lokal)
-
-Untuk menjalankan terus-menerus di mini PC / home server:
-
-### Windows (Task Scheduler)
-1. Buka Task Scheduler
-2. Create Basic Task → name: "MoneyFlowID Bot"
-3. Trigger: At startup
-4. Action: Start a program
-   - Program: `node`
-   - Arguments: `index.js`
-   - Start in: `C:\Users\Ikhsanh\Downloads\bot\MoneyFlowIDBot`
-
-### Menggunakan PM2 (Rekomendasi)
-```bash
-npm install -g pm2
-pm2 start index.js --name "moneyflow-bot"
-pm2 save
-pm2 startup
-```
-
-Bot akan otomatis restart jika crash dan saat server reboot.
-
-### Linux (Systemd Service)
-
-Buat file `/etc/systemd/system/moneyflowid-bot.service`:
-
-```ini
-[Unit]
-Description=MoneyFlowID Telegram Bot
-After=network.target
-
-[Service]
-Type=simple
-User=<your-username>
-WorkingDirectory=/home/your-user/MoneyFlowIDBot
-ExecStart=/usr/bin/node index.js
-Restart=always
-RestartSec=10
-
-[Install]
-WantedBy=multi-user.target
-```
-
-Jalankan:
-```bash
-sudo systemctl daemon-reload
-sudo systemctl enable moneyflowid-bot
-sudo systemctl start moneyflowid-bot
-```
 
 ---
 
