@@ -12,10 +12,7 @@ let genAI = null;
 
 const DEFAULT_CUSTOM_AI_BASE_URL = 'http://143.14.13.43:1430/v1';
 const DEFAULT_CUSTOM_AI_MODEL = 'kiro/claude-haiku-4.5-agentic';
-<<<<<<< HEAD
 const MAX_AI_RESPONSE_CHARS = 6000;
-=======
->>>>>>> 91e91329640d2bc4d9032441619c5f662eaed7ef
 
 function getAiProvider() {
   const provider = (process.env.AI_PROVIDER || '').trim().toLowerCase();
@@ -67,15 +64,12 @@ function stringifyContent(content) {
   return String(content);
 }
 
-<<<<<<< HEAD
 function truncateAiText(text) {
   const clean = String(text || '').trim();
   if (clean.length <= MAX_AI_RESPONSE_CHARS) return clean;
   return `${clean.slice(0, MAX_AI_RESPONSE_CHARS)}\n\n[Respons AI dipotong karena terlalu panjang.]`;
 }
 
-=======
->>>>>>> 91e91329640d2bc4d9032441619c5f662eaed7ef
 function mapHistoryForCustom(history = []) {
   return history
     .map((item) => ({
@@ -110,20 +104,12 @@ async function callCustomChat(messages, options = {}) {
   try {
     body = JSON.parse(bodyText);
   } catch {
-<<<<<<< HEAD
     return truncateAiText(bodyText);
-=======
-    return bodyText.trim();
->>>>>>> 91e91329640d2bc4d9032441619c5f662eaed7ef
   }
 
   const content = body.choices?.[0]?.message?.content || body.choices?.[0]?.text || body.output_text;
   if (!content) throw new Error('Custom AI returned an empty response.');
-<<<<<<< HEAD
   return truncateAiText(stringifyContent(content));
-=======
-  return stringifyContent(content).trim();
->>>>>>> 91e91329640d2bc4d9032441619c5f662eaed7ef
 }
 
 function getClient() {
@@ -168,7 +154,6 @@ async function generateText(prompt, options = {}) {
   const result = await executeWithFallback(async (model) => {
     return await model.generateContent(prompt);
   });
-<<<<<<< HEAD
   return truncateAiText(result.response.text());
 }
 
@@ -205,9 +190,6 @@ function extractFirstJsonObject(text) {
   }
 
   return null;
-=======
-  return result.response.text().trim();
->>>>>>> 91e91329640d2bc4d9032441619c5f662eaed7ef
 }
 
 // =============================================
