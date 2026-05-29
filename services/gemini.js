@@ -19,6 +19,29 @@ function getModel(modelName = 'gemini-3.5-flash') {
   return getClient().getGenerativeModel({ model: modelName });
 }
 
+const MODELS = [
+  process.env.GEMINI_MODEL,
+  'gemini-3.5-flash',
+  'gemini-2.5-flash',
+  'gemini-1.5-flash',
+].filter(Boolean);
+
+async function executeWithFallback(actionFn) {
+  let lastError = null;
+  const uniqueModels = [...new Set(MODELS)];
+  for (const modelName of uniqueModels) {
+    try {
+      const model = getModel(modelName);
+      return await actionFn(model);
+    } catch (err) {
+      lastError = err;
+      const errMsg = err.message || err;
+      console.warn(`[Gemini Fallback] Model ${modelName} failed: ${errMsg.split('\n')[0]}. Trying next...`);
+    }
+  }
+  throw lastError || new Error('All fallback Gemini models failed.');
+}
+
 // =============================================
 // TRANSACTION PARSER
 // =============================================
@@ -73,8 +96,9 @@ Important:
 - Return ONLY valid JSON, no markdown, no explanation.`;
 
   try {
-    const model = getModel();
-    const result = await model.generateContent(prompt);
+    const result = await executeWithFallback(async (model) => {
+      return await model.generateContent(prompt);
+    });
     const text = result.response.text().trim();
 
     // Extract JSON from response
@@ -160,8 +184,9 @@ Format: Use emoji sparingly for readability
 Keep it concise (max 250 words)`;
 
   try {
-    const model = getModel();
-    const result = await model.generateContent(prompt);
+    const result = await executeWithFallback(async (model) => {
+      return await model.generateContent(prompt);
+    });
     return result.response.text().trim();
   } catch (err) {
     const msg = err.message || '';
@@ -210,25 +235,25 @@ Guidelines:
 - Format numbers in Indonesian style (e.g., Rp 1.500.000)`;
 
   try {
-    const model = getModel();
-    const chat = model.startChat({
-      history: history.length > 0
-        ? [
-          { role: 'user', parts: [{ text: systemContext }] },
-          { role: 'model', parts: [{ text: 'Siap! Saya MoneyFlow AI, siap membantu keuangan Anda.' }] },
-          ...history,
-        ]
-        : [
-          { role: 'user', parts: [{ text: systemContext }] },
-          { role: 'model', parts: [{ text: 'Siap! Saya MoneyFlow AI, siap membantu keuangan Anda.' }] },
-        ],
-      generationConfig: {
-        maxOutputTokens: 500,
-        temperature: 0.7,
-      },
+    const result = await executeWithFallback(async (model) => {
+      const chatObj = model.startChat({
+        history: history.length > 0
+          ? [
+            { role: 'user', parts: [{ text: systemContext }] },
+            { role: 'model', parts: [{ text: 'Siap! Saya MoneyFlow AI, siap membantu keuangan Anda.' }] },
+            ...history,
+          ]
+          : [
+            { role: 'user', parts: [{ text: systemContext }] },
+            { role: 'model', parts: [{ text: 'Siap! Saya MoneyFlow AI, siap membantu keuangan Anda.' }] },
+          ],
+        generationConfig: {
+          maxOutputTokens: 500,
+          temperature: 0.7,
+        },
+      });
+      return await chatObj.sendMessage(message);
     });
-
-    const result = await chat.sendMessage(message);
     return result.response.text().trim();
   } catch (err) {
     console.error('Gemini chat error:', err.message);
@@ -245,8 +270,9 @@ async function getBillReminder(billName, amount, dueDay, lang = 'id') {
   const prompt = `In ${lang === 'id' ? 'Bahasa Indonesia' : 'English'}, write a very short (1 sentence), friendly reminder about paying the bill "${billName}" of Rp ${Math.round(amount).toLocaleString('id-ID')} due on the ${dueDay}th. Add one relevant emoji at the start.`;
 
   try {
-    const model = getModel();
-    const result = await model.generateContent(prompt);
+    const result = await executeWithFallback(async (model) => {
+      return await model.generateContent(prompt);
+    });
     return result.response.text().trim();
   } catch {
     return lang === 'id'
