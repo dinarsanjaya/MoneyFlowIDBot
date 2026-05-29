@@ -103,6 +103,167 @@ User bisa langsung chat transaksi dengan bahasa natural:
 - *"Transfer 100rb dari Gopay ke BCA"* → Bot handle transfer
 - *"Gaji 5 juta masuk ke BRI hari ini"* → Bot catat income
 
+## 📱 Cara Penggunaan
+
+### Menu Utama
+- **💰 Pemasukan** — Catat income
+- **💸 Pengeluaran** — Catat spending
+- **↔️ Transfer** — Pindah saldo antar akun
+- **📋 Lainnya** — Bills, Piutang, Utang
+- **📊 Laporan** — Berbagai laporan keuangan
+- **💳 Saldo** — Cek saldo semua akun
+- **🤖 AI Chat** — Chat dengan Gemini AI
+- **⚙️ Pengaturan** — Ubah setting
+
+### AI Chat
+Ketik transaksi dengan bahasa natural:
+- `"beli makan 25rb dari Gopay"`
+- `"gajian 5jt masuk BCA"`
+- `"transfer 100rb dari SeaBank ke Gopay"`
+- `"gimana keuangan saya bulan ini?"`
+
+## 📂 Struktur Folder
+
+```
+MoneyFlowIDBot/
+├── index.js                 # Entry point + routing
+├── .env                     # Konfigurasi sensitif (tidak di-commit)
+├── .env.example             # Template .env
+├── config/
+│   └── defaults.js          # Daftar default (akun, kategori, dll)
+├── handlers/
+│   ├── menu.js              # Semua keyboard builder
+│   ├── start.js             # Onboarding & /start
+│   ├── setup.js             # Flow setup keuangan
+│   ├── transaction.js       # Catat transaksi
+│   └── report.js            # Laporan & AI
+├── locales/
+│   ├── id.js                # Bahasa Indonesia
+│   ├── en.js                # English
+│   └── index.js             # Locale loader
+├── middleware/
+│   └── session.js           # State management
+├── services/
+│   ├── sheets.js            # Google Sheets API + monthly template
+│   ├── userStore.js         # User data management (JSON)
+│   └── gemini.js            # Gemini AI integration
+├── credentials/
+│   └── google-credentials.json  # Service account key (JANGAN di-commit!)
+└── data/
+    └── {userId}.json        # Data per user
+```
+
+## ⚙️ Tipe Cashflow & Alur Transaksi
+
+| Tipe | Keterangan | Dari → Ke | Contoh |
+|------|-----------|-----------|--------|
+| **Income** | Pemasukan dari sumber | → Akun | Gaji masuk ke BCA |
+| **Spending** | Pengeluaran kategori | Akun → | Beli makan dari Gopay |
+| **Transfer** | Pindah antar akun | Akun → Akun | Pindah dari BCA ke Gopay |
+| **Bills** | Bayar tagihan bulanan | Akun → | Bayar Netflix dari BCA |
+| **Piutang Baru** | Beri pinjaman ke orang | Akun → | Pinjami teman 500rb |
+| **Pelunasan Piutang** | Terima balik pinjaman | → Akun | Teman bayar 500rb |
+| **Utang Baru** | Pinjam dari orang | → Akun | Pinjam dari ortu 2jt |
+| **Pelunasan Utang** | Bayar utang ke orang | Akun → | Bayar utang ortu 500rb |
+| **Sinking Fund** | Tabungan tujuan | Akun → | Tabung untuk liburan |
+| **Financial Goals** | Target keuangan | Akun → | Alokasi untuk investasi |
+
+---
+
+---
+
+## 🛠️ Tech Stack
+
+| Komponen | Teknologi |
+|----------|-----------|
+| **Bot Framework** | node-telegram-bot-api |
+| **AI / NLP** | Google Gemini 3.5 Flash |
+| **Database** | Google Sheets (via googleapis) |
+| **Runtime** | Node.js 18+ |
+| **Local Storage** | JSON files |
+| **Task Scheduler** | node-cron |
+| **Environment** | dotenv |
+
+---
+
+## 📖 Dokumentasi API
+
+### User Data Structure
+```javascript
+{
+  userId: "string",
+  name: "string",
+  username: "string",
+  lang: "id" | "en",
+  spreadsheetId: "string",
+  setupComplete: boolean,
+  setupStep: "string",
+  incomeSources: [{ name, emoji, active }],
+  accounts: [{ name, emoji, type, initialBalance, balance }],
+  spendingCategories: [{ name, emoji }],
+  bills: [{ name, emoji, amount, dueDay }]
+}
+```
+
+### Transaction Types
+```
+- income              (Pemasukan)
+- expense             (Pengeluaran)
+- bills               (Tagihan)
+- savings             (Tabungan/Investasi)
+- transfer            (Transfer antar akun)
+- utang               (Utang baru)
+- pelunasan_utang     (Bayar utang)
+- piutang             (Piutang baru)
+- pelunasan_piutang   (Terima piutang)
+```
+
+---
+
+## 🐛 Troubleshooting
+
+### Bot tidak merespons
+- ✅ Cek apakah TELEGRAM_BOT_TOKEN sudah benar di `.env`
+- ✅ Cek koneksi internet
+- ✅ Buka console dan lihat error messages
+
+### Error: "Spreadsheet not found"
+- ✅ Pastikan Spreadsheet ID sudah benar
+- ✅ Pastikan service account email sudah di-share dengan akses **Editor**
+- ✅ Buka spreadsheet manual untuk memverifikasi akses
+
+### Error: "Invalid API key"
+- ✅ Cek GEMINI_API_KEY di `.env`
+- ✅ Pastikan API key masih aktif di [Google AI Studio](https://aistudio.google.com)
+- ✅ Cek quota Gemini API di [Google Cloud Console](https://console.cloud.google.com)
+
+### Transaksi tidak tercatat
+- ✅ Cek apakah setup sudah complete (`/settings` → Setup Check)
+- ✅ Lihat console untuk error logs
+- ✅ Pastikan sheet bulan ini sudah terbuat otomatis
+- ✅ Coba catat transaksi lagi dengan format yang jelas
+
+---
+
+## 💡 Tips & Best Practices
+
+### 1. **Catat Transaksi Segera**
+Catat pengeluaran sesegera mungkin agar data akurat & memory tetap fresh.
+
+### 2. **Gunakan AI Chat**
+Format natural language jauh lebih cepat daripada menu → dropdown → input.
+
+### 3. **Review Laporan Rutin**
+Cek progress budget & spending pattern setiap minggu untuk early warning.
+
+### 4. **Set Budget Realistis**
+Budget yang ketat malah membuat frustasi. Gunakan data historis untuk estimate.
+
+### 5. **Backup Spreadsheet**
+Download spreadsheet sebagai backup setiap bulannya.
+
+---
+
 ---
 
 ## 🚀 Cara Setup & Instalasi
@@ -358,166 +519,6 @@ sudo systemctl status moneyflowid-bot
 
 > 💡 **Tips**: Gunakan PM2 di Windows juga bisa — lebih mudah dari Task Scheduler dan support auto-restart.
 
-## 📱 Cara Penggunaan
-
-### Menu Utama
-- **💰 Pemasukan** — Catat income
-- **💸 Pengeluaran** — Catat spending
-- **↔️ Transfer** — Pindah saldo antar akun
-- **📋 Lainnya** — Bills, Piutang, Utang
-- **📊 Laporan** — Berbagai laporan keuangan
-- **💳 Saldo** — Cek saldo semua akun
-- **🤖 AI Chat** — Chat dengan Gemini AI
-- **⚙️ Pengaturan** — Ubah setting
-
-### AI Chat
-Ketik transaksi dengan bahasa natural:
-- `"beli makan 25rb dari Gopay"`
-- `"gajian 5jt masuk BCA"`
-- `"transfer 100rb dari SeaBank ke Gopay"`
-- `"gimana keuangan saya bulan ini?"`
-
-## 📂 Struktur Folder
-
-```
-MoneyFlowIDBot/
-├── index.js                 # Entry point + routing
-├── .env                     # Konfigurasi sensitif (tidak di-commit)
-├── .env.example             # Template .env
-├── config/
-│   └── defaults.js          # Daftar default (akun, kategori, dll)
-├── handlers/
-│   ├── menu.js              # Semua keyboard builder
-│   ├── start.js             # Onboarding & /start
-│   ├── setup.js             # Flow setup keuangan
-│   ├── transaction.js       # Catat transaksi
-│   └── report.js            # Laporan & AI
-├── locales/
-│   ├── id.js                # Bahasa Indonesia
-│   ├── en.js                # English
-│   └── index.js             # Locale loader
-├── middleware/
-│   └── session.js           # State management
-├── services/
-│   ├── sheets.js            # Google Sheets API + monthly template
-│   ├── userStore.js         # User data management (JSON)
-│   └── gemini.js            # Gemini AI integration
-├── credentials/
-│   └── google-credentials.json  # Service account key (JANGAN di-commit!)
-└── data/
-    └── {userId}.json        # Data per user
-```
-
-## ⚙️ Tipe Cashflow & Alur Transaksi
-
-| Tipe | Keterangan | Dari → Ke | Contoh |
-|------|-----------|-----------|--------|
-| **Income** | Pemasukan dari sumber | → Akun | Gaji masuk ke BCA |
-| **Spending** | Pengeluaran kategori | Akun → | Beli makan dari Gopay |
-| **Transfer** | Pindah antar akun | Akun → Akun | Pindah dari BCA ke Gopay |
-| **Bills** | Bayar tagihan bulanan | Akun → | Bayar Netflix dari BCA |
-| **Piutang Baru** | Beri pinjaman ke orang | Akun → | Pinjami teman 500rb |
-| **Pelunasan Piutang** | Terima balik pinjaman | → Akun | Teman bayar 500rb |
-| **Utang Baru** | Pinjam dari orang | → Akun | Pinjam dari ortu 2jt |
-| **Pelunasan Utang** | Bayar utang ke orang | Akun → | Bayar utang ortu 500rb |
-| **Sinking Fund** | Tabungan tujuan | Akun → | Tabung untuk liburan |
-| **Financial Goals** | Target keuangan | Akun → | Alokasi untuk investasi |
-
----
-
----
-
-## 🛠️ Tech Stack
-
-| Komponen | Teknologi |
-|----------|-----------|
-| **Bot Framework** | node-telegram-bot-api |
-| **AI / NLP** | Google Gemini 3.5 Flash |
-| **Database** | Google Sheets (via googleapis) |
-| **Runtime** | Node.js 18+ |
-| **Local Storage** | JSON files |
-| **Task Scheduler** | node-cron |
-| **Environment** | dotenv |
-
----
-
-## 📖 Dokumentasi API
-
-### User Data Structure
-```javascript
-{
-  userId: "string",
-  name: "string",
-  username: "string",
-  lang: "id" | "en",
-  spreadsheetId: "string",
-  setupComplete: boolean,
-  setupStep: "string",
-  incomeSources: [{ name, emoji, active }],
-  accounts: [{ name, emoji, type, initialBalance, balance }],
-  spendingCategories: [{ name, emoji }],
-  bills: [{ name, emoji, amount, dueDay }]
-}
-```
-
-### Transaction Types
-```
-- income              (Pemasukan)
-- expense             (Pengeluaran)
-- bills               (Tagihan)
-- savings             (Tabungan/Investasi)
-- transfer            (Transfer antar akun)
-- utang               (Utang baru)
-- pelunasan_utang     (Bayar utang)
-- piutang             (Piutang baru)
-- pelunasan_piutang   (Terima piutang)
-```
-
----
-
-## 🐛 Troubleshooting
-
-### Bot tidak merespons
-- ✅ Cek apakah TELEGRAM_BOT_TOKEN sudah benar di `.env`
-- ✅ Cek koneksi internet
-- ✅ Buka console dan lihat error messages
-
-### Error: "Spreadsheet not found"
-- ✅ Pastikan Spreadsheet ID sudah benar
-- ✅ Pastikan service account email sudah di-share dengan akses **Editor**
-- ✅ Buka spreadsheet manual untuk memverifikasi akses
-
-### Error: "Invalid API key"
-- ✅ Cek GEMINI_API_KEY di `.env`
-- ✅ Pastikan API key masih aktif di [Google AI Studio](https://aistudio.google.com)
-- ✅ Cek quota Gemini API di [Google Cloud Console](https://console.cloud.google.com)
-
-### Transaksi tidak tercatat
-- ✅ Cek apakah setup sudah complete (`/settings` → Setup Check)
-- ✅ Lihat console untuk error logs
-- ✅ Pastikan sheet bulan ini sudah terbuat otomatis
-- ✅ Coba catat transaksi lagi dengan format yang jelas
-
----
-
-## 💡 Tips & Best Practices
-
-### 1. **Catat Transaksi Segera**
-Catat pengeluaran sesegera mungkin agar data akurat & memory tetap fresh.
-
-### 2. **Gunakan AI Chat**
-Format natural language jauh lebih cepat daripada menu → dropdown → input.
-
-### 3. **Review Laporan Rutin**
-Cek progress budget & spending pattern setiap minggu untuk early warning.
-
-### 4. **Set Budget Realistis**
-Budget yang ketat malah membuat frustasi. Gunakan data historis untuk estimate.
-
-### 5. **Backup Spreadsheet**
-Download spreadsheet sebagai backup setiap bulannya.
-
----
 
 ## 📞 Support & Feedback
 
