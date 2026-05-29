@@ -17,6 +17,37 @@ const {
 } = require('./menu');
 const L = require('../locales');
 
+const TELEGRAM_TEXT_LIMIT = 3900;
+
+function splitTelegramText(text) {
+  const chunks = [];
+  const source = String(text || '').trim() || '-';
+  for (let i = 0; i < source.length; i += TELEGRAM_TEXT_LIMIT) {
+    chunks.push(source.slice(i, i + TELEGRAM_TEXT_LIMIT));
+  }
+  return chunks;
+}
+
+async function sendPlainTextChunks(bot, chatId, text, replyMarkup = null) {
+  const chunks = splitTelegramText(text);
+  for (let i = 0; i < chunks.length; i += 1) {
+    const options = replyMarkup && i === chunks.length - 1 ? { reply_markup: replyMarkup } : undefined;
+    await bot.sendMessage(chatId, chunks[i], options);
+  }
+}
+
+async function editPlainTextChunks(bot, chatId, messageId, text, replyMarkup = null) {
+  const chunks = splitTelegramText(text);
+  const editOptions = { chat_id: chatId, message_id: messageId };
+  if (replyMarkup && chunks.length === 1) editOptions.reply_markup = replyMarkup;
+  await bot.editMessageText(chunks[0], editOptions);
+
+  for (let i = 1; i < chunks.length; i += 1) {
+    const options = replyMarkup && i === chunks.length - 1 ? { reply_markup: replyMarkup } : undefined;
+    await bot.sendMessage(chatId, chunks[i], options);
+  }
+}
+
 // =============================================
 // REPORT MENU
 // =============================================
@@ -335,12 +366,13 @@ async function showAiInsight(bot, chatId, userId) {
       user.lang
     );
 
-    await bot.editMessageText(`🤖 *AI Financial Insight*\n\n${insight}`, {
-      chat_id: chatId,
-      message_id: loadMsg.message_id,
-      parse_mode: 'Markdown',
-      reply_markup: backToMenuKeyboard(user.lang),
-    });
+    await editPlainTextChunks(
+      bot,
+      chatId,
+      loadMsg.message_id,
+      `🤖 AI Financial Insight\n\n${insight}`,
+      backToMenuKeyboard(user.lang)
+    );
 
   } catch (err) {
     console.error('AI insight error:', err.message);
@@ -404,14 +436,14 @@ async function handleAiMessage(bot, msg) {
       // Bukan transaksi — tampilkan respons AI langsung
       session.addToAiHistory(userId, 'user', text);
       session.addToAiHistory(userId, 'model', parsed.response);
-      await bot.sendMessage(chatId, parsed.response, { parse_mode: 'Markdown' });
+      await sendPlainTextChunks(bot, chatId, parsed.response);
     } else {
       // Fallback ke chat biasa
       const sessionData = session.getSession(userId);
       const response = await gemini.chat(text, sessionData.aiHistory || [], userCtx, user.lang);
       session.addToAiHistory(userId, 'user', text);
       session.addToAiHistory(userId, 'model', response);
-      await bot.sendMessage(chatId, response, { parse_mode: 'Markdown' });
+      await sendPlainTextChunks(bot, chatId, response);
     }
 
   } catch (err) {

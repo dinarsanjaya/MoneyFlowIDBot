@@ -12,6 +12,10 @@ let genAI = null;
 
 const DEFAULT_CUSTOM_AI_BASE_URL = 'http://143.14.13.43:1430/v1';
 const DEFAULT_CUSTOM_AI_MODEL = 'kiro/claude-haiku-4.5-agentic';
+<<<<<<< HEAD
+const MAX_AI_RESPONSE_CHARS = 6000;
+=======
+>>>>>>> 91e91329640d2bc4d9032441619c5f662eaed7ef
 
 function getAiProvider() {
   const provider = (process.env.AI_PROVIDER || '').trim().toLowerCase();
@@ -63,6 +67,15 @@ function stringifyContent(content) {
   return String(content);
 }
 
+<<<<<<< HEAD
+function truncateAiText(text) {
+  const clean = String(text || '').trim();
+  if (clean.length <= MAX_AI_RESPONSE_CHARS) return clean;
+  return `${clean.slice(0, MAX_AI_RESPONSE_CHARS)}\n\n[Respons AI dipotong karena terlalu panjang.]`;
+}
+
+=======
+>>>>>>> 91e91329640d2bc4d9032441619c5f662eaed7ef
 function mapHistoryForCustom(history = []) {
   return history
     .map((item) => ({
@@ -97,12 +110,20 @@ async function callCustomChat(messages, options = {}) {
   try {
     body = JSON.parse(bodyText);
   } catch {
+<<<<<<< HEAD
+    return truncateAiText(bodyText);
+=======
     return bodyText.trim();
+>>>>>>> 91e91329640d2bc4d9032441619c5f662eaed7ef
   }
 
   const content = body.choices?.[0]?.message?.content || body.choices?.[0]?.text || body.output_text;
   if (!content) throw new Error('Custom AI returned an empty response.');
+<<<<<<< HEAD
+  return truncateAiText(stringifyContent(content));
+=======
   return stringifyContent(content).trim();
+>>>>>>> 91e91329640d2bc4d9032441619c5f662eaed7ef
 }
 
 function getClient() {
@@ -147,7 +168,46 @@ async function generateText(prompt, options = {}) {
   const result = await executeWithFallback(async (model) => {
     return await model.generateContent(prompt);
   });
+<<<<<<< HEAD
+  return truncateAiText(result.response.text());
+}
+
+function extractFirstJsonObject(text) {
+  const start = text.indexOf('{');
+  if (start === -1) return null;
+
+  let depth = 0;
+  let inString = false;
+  let escaped = false;
+
+  for (let i = start; i < text.length; i += 1) {
+    const ch = text[i];
+
+    if (inString) {
+      if (escaped) {
+        escaped = false;
+      } else if (ch === '\\') {
+        escaped = true;
+      } else if (ch === '"') {
+        inString = false;
+      }
+      continue;
+    }
+
+    if (ch === '"') {
+      inString = true;
+    } else if (ch === '{') {
+      depth += 1;
+    } else if (ch === '}') {
+      depth -= 1;
+      if (depth === 0) return text.slice(start, i + 1);
+    }
+  }
+
+  return null;
+=======
   return result.response.text().trim();
+>>>>>>> 91e91329640d2bc4d9032441619c5f662eaed7ef
 }
 
 // =============================================
@@ -206,11 +266,10 @@ Important:
   try {
     const text = await generateText(prompt, { maxOutputTokens: 500, temperature: 0.2 });
 
-    // Extract JSON from response
-    const jsonMatch = text.match(/\{[\s\S]*\}/);
-    if (!jsonMatch) return { isTransaction: false, response: text };
+    const jsonText = extractFirstJsonObject(text);
+    if (!jsonText) return { isTransaction: false, response: text };
 
-    const parsed = JSON.parse(jsonMatch[0]);
+    const parsed = JSON.parse(jsonText);
     return parsed;
   } catch (err) {
     const msg = err.message || '';
